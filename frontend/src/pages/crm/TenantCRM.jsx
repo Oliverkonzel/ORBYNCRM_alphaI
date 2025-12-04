@@ -1,9 +1,18 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getCustomers, addCustomer } from "../../services/api";
 
 export default function TenantCRM() {
-  const tenant = JSON.parse(localStorage.getItem("tenant"));
-  const tenantCode = tenant?.code;
+  const navigate = useNavigate();
+
+  let tenant = null;
+  try {
+    tenant = JSON.parse(localStorage.getItem("tenant"));
+  } catch (error) {
+    tenant = null;
+  }
+
+  const tenantCode = tenant?.code || localStorage.getItem("tenant_code") || null;
 
   const [customers, setCustomers] = useState([]);
   const [form, setForm] = useState({
@@ -12,14 +21,25 @@ export default function TenantCRM() {
     phone: "",
     company_name: "",
     address: "",
-    tenant_code: tenantCode,
+    tenant_code: tenantCode ?? "",
   });
 
   useEffect(() => {
+    if (!tenantCode) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
     loadCustomers();
-  }, []);
+  }, [tenantCode, navigate]);
+
+  useEffect(() => {
+    if (!tenantCode) return;
+    setForm((prev) => ({ ...prev, tenant_code: tenantCode }));
+  }, [tenantCode]);
 
   const loadCustomers = async () => {
+    if (!tenantCode) return;
     const data = await getCustomers(tenantCode);
     setCustomers(data);
   };
@@ -30,6 +50,8 @@ export default function TenantCRM() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!tenantCode) return;
+
     await addCustomer(form);
     setForm({
       name: "",
