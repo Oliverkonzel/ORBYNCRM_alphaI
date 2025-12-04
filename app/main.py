@@ -191,10 +191,14 @@ def create_tenant(tenant: schemas.TenantCreate, db: Session = Depends(get_db)):
 # LEGACY CUSTOMERS (your original CRM screen)
 # -------------------------------------------------
 @app.post("/customers/", response_model=schemas.CustomerOut)
-def add_customer(customer: schemas.CustomerCreate, tenant_code: str, db: Session = Depends(get_db)):
+def add_customer(customer: schemas.CustomerCreate, db: Session = Depends(get_db)):
     """
     Add a new customer/contact to the tenant's CRM.
     """
+    tenant_code = customer.tenant_code
+    if not tenant_code:
+        raise HTTPException(status_code=400, detail="tenant_code is required")
+    
     tenant = crud.get_tenant_by_code(db, tenant_code)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")

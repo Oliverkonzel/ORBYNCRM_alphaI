@@ -35,8 +35,7 @@ def create_user(db: Session, user: schemas.UserCreate, password_hash: str):
         email=user.email,
         password_hash=password_hash,
         role=user.role,
-        tenant_id=tenant.id,
-        tenant_code=user.tenant_code    # <-- stores code for frontend login
+        tenant_id=tenant.id
     )
 
     db.add(db_user)

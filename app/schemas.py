@@ -99,7 +99,7 @@ class ContactOut(ContactBase):
 
 # ---------- CUSTOMER (Legacy) ----------
 class CustomerCreate(ContactBase):
-    pass
+    tenant_code: Optional[str] = None
 
 class CustomerOut(ContactOut):
     pass
