@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { loginUser } from "../services/api";
+import { useState, useEffect } from "react";
+import { loginUser, getTenants } from "../services/api";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
@@ -8,7 +8,31 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [tenantCode, setTenantCode] = useState(""); // frontend state
+  const [tenants, setTenants] = useState([]);
+  const [loadingTenants, setLoadingTenants] = useState(true);
   const [error, setError] = useState("");
+
+  // Fetch tenants on component mount
+  useEffect(() => {
+    const fetchTenants = async () => {
+      try {
+        const tenantsData = await getTenants();
+        if (tenantsData && Array.isArray(tenantsData)) {
+          setTenants(tenantsData);
+        } else {
+          setTenants([]);
+        }
+      } catch (err) {
+        console.error("Error fetching tenants:", err);
+        // Silently fail - user can still select Master Admin or hardcoded options
+        setTenants([]);
+      } finally {
+        setLoadingTenants(false);
+      }
+    };
+
+    fetchTenants();
+  }, []);
 
   const handleLogin = async () => {
     setError("");
@@ -80,12 +104,17 @@ export default function Login() {
           className="w-full p-2 rounded bg-gray-900 border border-gray-700 mb-6"
           value={tenantCode}
           onChange={(e) => setTenantCode(e.target.value)}
+          disabled={loadingTenants}
         >
-          <option value="">Choose one</option>
+          <option value="">
+            {loadingTenants ? "Loading companies..." : "Choose one"}
+          </option>
           <option value="master">Master Admin</option>
-          <option value="home_depot">Home Depot</option>
-          <option value="walmart">Walmart</option>
-          <option value="target">Target</option>
+          {tenants.map((tenant) => (
+            <option key={tenant.id} value={tenant.code}>
+              {tenant.name}
+            </option>
+          ))}
         </select>
 
         {error && <p className="text-red-400 mb-3">{error}</p>}
