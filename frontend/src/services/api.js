@@ -19,13 +19,18 @@ export async function loginUser(payload) {
 // CUSTOMERS
 // =====================
 
-export async function getCustomers() {
-  const res = await api.get("/customers");
+export async function getCustomers(tenantCode) {
+  const res = await api.get("/customers", {
+    params: { tenant_code: tenantCode },
+  });
   return res.data;
 }
 
 export async function addCustomer(body) {
-  const res = await api.post("/customers", body);
+  const res = await api.post("/customers", {
+    ...body,
+    tenant_code: body?.tenant_code,
+  });
   return res.data;
 }
 

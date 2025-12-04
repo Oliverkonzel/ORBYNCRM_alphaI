@@ -3,9 +3,11 @@ import { getCustomers, addCustomer } from "../../services/api";
 
 export default function TenantCRM() {
   const tenant = JSON.parse(localStorage.getItem("tenant"));
-  const tenantCode = tenant?.code;
+  const tenantCode = tenant?.code || "";
 
   const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -17,11 +19,25 @@ export default function TenantCRM() {
 
   useEffect(() => {
     loadCustomers();
-  }, []);
+  }, [tenantCode]);
 
   const loadCustomers = async () => {
-    const data = await getCustomers(tenantCode);
-    setCustomers(data);
+    setError("");
+    if (!tenantCode) {
+      setError("Tenant code missing. Please reselect a tenant.");
+      setCustomers([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const data = await getCustomers(tenantCode);
+      setCustomers(data);
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Failed to load customers.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (field) => (e) => {
@@ -30,16 +46,27 @@ export default function TenantCRM() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await addCustomer(form);
-    setForm({
-      name: "",
-      email: "",
-      phone: "",
-      company_name: "",
-      address: "",
-      tenant_code: tenantCode,
-    });
-    loadCustomers();
+    setError("");
+
+    if (!tenantCode) {
+      setError("Cannot add customer without a tenant code.");
+      return;
+    }
+
+    try {
+      await addCustomer({ ...form, tenant_code: tenantCode });
+      setForm({
+        name: "",
+        email: "",
+        phone: "",
+        company_name: "",
+        address: "",
+        tenant_code: tenantCode,
+      });
+      loadCustomers();
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Failed to add customer.");
+    }
   };
 
   return (
@@ -47,6 +74,12 @@ export default function TenantCRM() {
       <h1 className="text-3xl font-bold mb-4">
         {tenant?.name} CRM
       </h1>
+
+      {error && (
+        <div className="bg-red-900/40 text-red-100 px-4 py-2 rounded mb-4">
+          {error}
+        </div>
+      )}
 
       {/* Add Customer */}
       <div className="bg-[#111] p-5 rounded-xl mb-10">
@@ -67,21 +100,25 @@ export default function TenantCRM() {
       <div className="bg-[#111] p-5 rounded-xl">
         <h2 className="text-xl font-semibold mb-3">Customer List</h2>
 
-        <table className="w-full">
-          <tbody>
-            {customers.map((c) => (
-              <tr key={c.id}>
-                <td>{c.name}</td>
-                <td>{c.company_name}</td>
-                <td>{c.email}</td>
-                <td>{c.phone}</td>
-                <td>{c.address}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {loading ? (
+          <p className="opacity-70 py-4">Loading customers...</p>
+        ) : (
+          <table className="w-full">
+            <tbody>
+              {customers.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.name}</td>
+                  <td>{c.company_name}</td>
+                  <td>{c.email}</td>
+                  <td>{c.phone}</td>
+                  <td>{c.address}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
-        {customers.length === 0 && (
+        {!loading && customers.length === 0 && (
           <p className="text-center opacity-50 py-6">No customers yet.</p>
         )}
       </div>
