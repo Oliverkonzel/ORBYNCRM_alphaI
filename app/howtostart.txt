@@ -1,9 +1,9 @@
 HOW TO START THE CRM (FRONTEND + BACKEND)
 
  
-Activate your virtual environment: venv\Scripts\activate
 
-Backend: uvicorn app.main:app --reload
+
+Backend:  python -m uvicorn app.main:app --reload
 
 press exit to get out the venv
 
